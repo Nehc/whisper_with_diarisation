@@ -1,2 +1,2 @@
-# whisper_with_diarisation_bot
+# Whisper tg bot. 
 Telegram bot on whisper backend with diarisation
