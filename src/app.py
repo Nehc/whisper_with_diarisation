@@ -1,9 +1,10 @@
 import sys
 from io import StringIO
-from diar import diarisation, wh_model
 from googletrans import Translator
 from pytube import YouTube
 import gradio as gr
+
+from diar import diarisation, wh_model
 
 translator = Translator()
 
