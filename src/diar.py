@@ -27,7 +27,7 @@ def convert_to_wav(path):
 
 def segment_embedding(path, segment):
   waveform, fs = torchaudio.load(path)
-  duration = waveform.shape[2]
+  duration = waveform.shape[-1]
   start = int(segment["start"] * fs) 
   # Whisper overshoots the end timestamp in the last segment
   end = min(duration, int(segment["end"] * fs))
