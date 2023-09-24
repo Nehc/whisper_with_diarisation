@@ -1,7 +1,5 @@
 # Whisper with diarisation. 
-Whisper gradio backend with diarisation ( pyannote + speechbrain ).
+Whisper gradio backend with diarisation ( OpenAI + speechbrain ).
 
-- https://github.com/pyannote/pyannote-audio
+- https://github.com/openai/whisper
 - https://github.com/speechbrain/speechbrain
-
-https://huggingface.co/spaces/dwarkesh/whisper-speaker-recognition/blob/main/app.py
