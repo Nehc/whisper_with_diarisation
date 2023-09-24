@@ -16,7 +16,6 @@ classifier = EncoderClassifier.from_hparams(source=model_name)
 def time(secs):
   return datetime.timedelta(seconds=round(secs))
 
-
 def convert_to_wav(path):
   new_path = '.'.join(path.split('.')[:-1]) + '_mono.wav'
   try:
@@ -46,16 +45,13 @@ def make_embeddings(path, segments):
 
 
 def add_speaker_labels(segments, embeddings, num_speakers=2, speakers=None):
-  if speakers:
-      num_speakers = len(speakers)
+  if speakers: num_speakers = len(speakers)
   clustering = AgglomerativeClustering(num_speakers).fit(embeddings)
   #clustering = SpectralClustering(num_speakers).fit(embeddings)
   labels = clustering.labels_
   for i in range(len(segments)):
-    if speakers:
-      segments[i]["speaker"] = speakers[labels[i]]
-    else:
-      segments[i]["speaker"] = 'SPEAKER-' + str(labels[i] + 1)
+    segments[i]["speaker"] = ( speakers[labels[i]] if speakers 
+                                else 'SPEAKER-' + str(labels[i] + 1) )
 
 
 def group_df_by_speaker(df):
@@ -79,8 +75,7 @@ def get_output(segments):
   output = ''
   for (i, segment) in enumerate(segments):
     if i == 0 or segments[i - 1]["speaker"] != segment["speaker"]:
-      if i != 0:
-        output += '\n\n'
+      if i != 0: output += '\n\n'
       output += segment["speaker"] + ' ' + str(time(segment["start"])) + '\n\n'
     output += segment["text"][1:] + ' '
   return output
