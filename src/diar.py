@@ -1,21 +1,17 @@
-import subprocess, datetime, contextlib
-import wave, torch, whisper
-from sklearn.cluster import SpectralClustering
-#from sklearn.cluster import AgglomerativeClustering
-from pyannote.audio.pipelines.speaker_verification import PretrainedSpeakerEmbedding
-from pyannote.audio import Audio
-from pyannote.core import Segment
+import subprocess, datetime
+import torch, torchaudio, whisper
+from sklearn.cluster import AgglomerativeClustering #,SpectralClustering
+from speechbrain.pretrained import EncoderClassifier
 import numpy as np
 import pandas as pd
 
 wh_model = whisper.load_model("small")
+#wh_model = whisper.load_model("large-v2")
 
-embedding_model = PretrainedSpeakerEmbedding(
-    "speechbrain/spkrec-resnet-voxceleb",
-    #"speechbrain/spkrec-ecapa-voxceleb",
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
-
-audio_proc = Audio()
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model_name = "speechbrain/spkrec-ecapa-voxceleb"
+classifier = EncoderClassifier.from_hparams(source=model_name)
+#classifier.to(device)
 
 def time(secs):
   return datetime.timedelta(seconds=round(secs))
@@ -30,34 +26,30 @@ def convert_to_wav(path):
   return new_path, 'file converted'
 
 
-def get_duration(path):
-  with contextlib.closing(wave.open(path,'r')) as f:
-    frames = f.getnframes()
-    rate = f.getframerate()
-    return frames / float(rate)
-
-
-def segment_embedding(path, segment, duration):
-  start = segment["start"]
+def segment_embedding(path, segment):
+  waveform, fs = torchaudio.load(path)
+  duration = waveform.shape[2]
+  start = int(segment["start"] * fs) 
   # Whisper overshoots the end timestamp in the last segment
-  end = min(duration, segment["end"])
-  clip = Segment(start, end)
-  waveform,_ = audio_proc.crop(path, clip)
-  return embedding_model(waveform[None])
+  end = min(duration, int(segment["end"] * fs))
+  wav =  waveform[ : , start : end ]
+  embeddings = classifier.encode_batch(wav) #.to(device))
+  return embeddings
 
 
-def make_embeddings(path, segments, duration):
+def make_embeddings(path, segments):
+  #embeddings = list(map(lambda segment: segment_embedding(path, segment), segments))
   embeddings = np.zeros(shape=(len(segments), 192))
   for i, segment in enumerate(segments):
-    embeddings[i] = segment_embedding(path, segment, duration)
+    embeddings[i] = segment_embedding(path, segment)
   return np.nan_to_num(embeddings)
 
 
 def add_speaker_labels(segments, embeddings, num_speakers=2, speakers=None):
   if speakers:
       num_speakers = len(speakers)
-  #clustering = AgglomerativeClustering(num_speakers).fit(embeddings)
-  clustering = SpectralClustering(num_speakers).fit(embeddings)
+  clustering = AgglomerativeClustering(num_speakers).fit(embeddings)
+  #clustering = SpectralClustering(num_speakers).fit(embeddings)
   labels = clustering.labels_
   for i in range(len(segments)):
     if speakers:
@@ -103,7 +95,7 @@ def diarisation(aud, sp_num=2):
   result = wh_model.transcribe(aud)
   segments = result["segments"]
   wav_file, res = convert_to_wav(aud); print(res) 
-  emb = make_embeddings(wav_file, segments, get_duration(wav_file))
+  emb = make_embeddings(wav_file, segments)
   add_speaker_labels(segments, emb, num_speakers=int(sp_num))
   df = pd.DataFrame.from_records(segments,index = 'id', 
                     columns=['id','speaker','text','start','end'])
