@@ -1,2 +1,2 @@
-# Whisper tg bot. 
-Telegram bot on whisper backend with diarisation
+# Whisper with diarisation. 
+Whisper gradio backend with diarisation ( pyannote + speechbrain ).
