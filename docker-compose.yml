@@ -1,0 +1,21 @@
+version: "3.9"
+services:
+  wisper:
+    image: nehcy/whisper 
+    container_name: Whisper 
+    build: . 
+    environment:
+      - GRADIO_SERVER_NAME=0.0.0.0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    network_mode: bridge
+    stdin_open: true    
+    tty: true
+    restart: always
+    ports:
+      - 7860:7860
