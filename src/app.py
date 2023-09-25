@@ -50,7 +50,7 @@ def get_yotube_aux(url):
   yt = YouTube(url)
   strms = yt.streams.filter(only_audio=True,mime_type="audio/mp4")
   strms[-1].download(filename='audio.mp3')
-
+  return 'audio.mp3'
 
 with gr.Blocks() as demo:
   
